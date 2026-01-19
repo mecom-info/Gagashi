@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERITAS 2.0 | Социальный эксперимент</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --truth-green: #28a745;
+            --lie-red: #dc3545;
+            --neutral-yellow: #ffc107;
+            --primary-blue: #0d6efd;
+            --dark-bg: #1a1a2e;
+            --card-bg: #16213e;
+            --accent-purple: #6f42c1;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .game-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        
+        .truth-badge {
+            background: linear-gradient(135deg, var(--truth-green), #20c997);
+            color: white;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+        
+        .lie-badge {
+            background: linear-gradient(135deg, var(--lie-red), #e83e8c);
+            color: white;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+        
+        .option-card {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+        }
+        
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        
+        .option-card.selected {
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
+        }
+        
+        .progress-lg {
+            height: 12px;
+            border-radius: 6px;
+        }
+        
+        .character-portrait {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-blue);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .rating-badge {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .truth-0 { border-left: 5px solid #28a745; }
+        .truth-1 { border-left: 5px solid #20c997; }
+        .truth-2 { border-left: 5px solid #ffc107; }
+        .truth-3 { border-left: 5px solid #fd7e14; }
+        .truth-4 { border-left: 5px solid #dc3545; }
+        .truth-5 { border-left: 5px solid #6c757d; }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, var(--primary-blue), #6610f2);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+        
+        .consequence-alert {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .social-rating-card {
+            background: linear-gradient(135deg, var(--dark-bg), var(--card-bg));
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .player-stats-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        
+        @media (max-width: 768px) {
+            .game-wrapper {
+                padding: 10px;
+            }
+            
+            .glass-card {
+                padding: 15px;
+            }
+            
+            .character-portrait {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        .scenario-badge {
+            background: linear-gradient(135deg, var(--accent-purple), #e83e8c);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .consequence-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+        
+        .positive-tag { background: rgba(40, 167, 69, 0.15); color: var(--truth-green); }
+        .negative-tag { background: rgba(220, 53, 69, 0.15); color: var(--lie-red); }
+        .neutral-tag { background: rgba(255, 193, 7, 0.15); color: #856404; }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        #gameTab {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- Верхняя панель с навигацией -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="text-white mb-0"><i class="fas fa-balance-scale"></i> VERITAS 2.0</h1>
+                <small class="text-white-50">Социальный эксперимент по доверию</small>
+            </div>
+            <div class="d-flex gap-3">
+                <button class="btn btn-outline-light" onclick="showTab('game')">
+                    <i class="fas fa-gamepad"></i> Игра
+                </button>
+                <button class="btn btn-outline-light" onclick="showTab('profile')">
+                    <i class="fas fa-user"></i> Профиль
+                </button>
+                <button class="btn btn-outline-light" onclick="showTab('rating')">
+                    <i class="fas fa-chart-line"></i> Рейтинг
+                </button>
+            </div>
+        </div>
+        
+        <!-- Основные вкладки -->
+        <div id="gameTab" class="tab-content">
+            <!-- Верхняя часть с рейтингом -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="social-rating-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="mb-2"><i class="fas fa-globe-europe"></i> СОЦИАЛЬНЫЙ ИНДЕКС ПРАВДЫ</h4>
+                                <div class="d-flex align-items-center gap-4">
+                                    <div>
+                                        <div class="h2 mb-0" id="globalIndex">74.3%</div>
+                                        <small class="text-white-50">Согласованность общества</small>
+                                    </div>
+                                    <div>
+                                        <div class="h2 mb-0 text-warning" id="playerRank">#842</div>
+                                        <small class="text-white-50">Ваша позиция</small>
+                                    </div>
+                                    <div>
+                                        <div class="h2 mb-0" id="trustScore">86</div>
+                                        <small class="text-white-50">Индекс доверия</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="p-3 bg-dark bg-opacity-50 rounded">
+                                    <div class="small">Эпистемический кризис:</div>
+                                    <div class="h4 text-danger">+2.4%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress progress-lg mt-3">
+                            <div class="progress-bar bg-success" style="width: 45%"></div>
+                            <div class="progress-bar bg-warning" style="width: 30%"></div>
+                            <div class="progress-bar bg-danger" style="width: 25%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="player-stats-card h-100">
+                        <h5><i class="fas fa-chart-pie"></i> Ваша статистика</h5>
+                        <div class="row text-center mt-3">
+                            <div class="col-6">
+                                <div class="h4 text-success" id="playerTruth">68%</div>
+                                <small class="text-muted">Правдивость</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="h4 text-primary" id="playerGames">12</div>
+                                <small class="text-muted">Сыграно игр</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="small text-muted">Коэффициент влияния:</div>
+                            <div class="h3" id="influenceCoef" style="color: var(--accent-purple);">1.42</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Игровая область -->
+            <div class="glass-card p-4 mb-4">
+                <div id="gameContent">
+                    <!-- Игровой контент загружается динамически -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка профиля -->
+        <div id="profileTab" class="tab-content">
+            <div class="glass-card p-4">
+                <h3 class="mb-4"><i class="fas fa-id-card"></i> ПРОФИЛЬ ИГРОКА</h3>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center mb-4">
+                            <div class="character-portrait mx-auto bg-primary d-flex align-items-center justify-content-center text-white mb-3">
+                                <i class="fas fa-user fa-2x"></i>
+                            </div>
+                            <h4 id="playerName">Игрок</h4>
+                            <div class="scenario-badge d-inline-block mb-3">Эксперт уровня 5</div>
+                            <div class="rating-badge bg-success text-white">Рейтинг: 8.6/10</div>
+                        </div>
+                        
+                        <div class="player-stats-card">
+                            <h6>Ключевые коэффициенты:</h6>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Эпистемическая устойчивость</span>
+                                    <span class="fw-bold" id="coefStability">0.78</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Социальная чувствительность</span>
+                                    <span class="fw-bold" id="coefSocial">0.65</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Этическая консистентность</span>
+                                    <span class="fw-bold" id="coefEthics">0.82</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Стратегическая гибкость</span>
+                                    <span class="fw-bold" id="coefStrategy">0.71</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Доверительный капитал</span>
+                                    <span class="fw-bold" id="coefTrust">0.89</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="mb-4">
+                            <h5><i class="fas fa-history"></i> История решений</h5>
+                            <div id="decisionHistory" class="mt-3">
+                                <!-- История загружается динамически -->
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="player-stats-card h-100">
+                                    <h6><i class="fas fa-trophy"></i> Достижения</h6>
+                                    <div class="mt-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-medal text-warning me-2"></i>
+                                            <div>
+                                                <div class="small">Мастер правды</div>
+                                                <small class="text-muted">10+ правдивых решений подряд</small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-shield-alt text-success me-2"></i>
+                                            <div>
+                                                <div class="small">Неподкупный</div>
+                                                <small class="text-muted">Никогда не использовал конспирологию</small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-brain text-primary me-2"></i>
+                                            <div>
+                                                <div class="small">Тактик</div>
+                                                <small class="text-muted">Баланс правды и дипломатии</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="player-stats-card h-100">
+                                    <h6><i class="fas fa-chart-bar"></i> Аналитика стиля</h6>
+                                    <canvas id="styleChart" height="150"></canvas>
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted" id="playStyle">Сбалансированный прагматик</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка рейтинга -->
+        <div id="ratingTab" class="tab-content">
+            <div class="glass-card p-4">
+                <h3 class="mb-4"><i class="fas fa-crown"></i> ТОП-100 ИГРОКОВ</h3>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="social-rating-card text-center">
+                            <div class="display-4 mb-2">🏆</div>
+                            <h5>Лучший игрок месяца</h5>
+                            <h4 class="text-warning" id="topPlayer">Алексей И.</h4>
+                            <div class="h2">9.8/10</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="social-rating-card text-center">
+                            <div class="display-4 mb-2">📊</div>
+                            <h5>Средний рейтинг</h5>
+                            <h4 class="text-info">7.2/10</h4>
+                            <div class="small">На основе 15,842 игр</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="social-rating-card text-center">
+                            <div class="display-4 mb-2">⚖️</div>
+                            <h5>Баланс правды</h5>
+                            <h4 class="text-success">64%</h4>
+                            <div class="small">В среднем по сообществу</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Игрок</th>
+                                <th>Рейтинг</th>
+                                <th>Правдивость</th>
+                                <th>Игр</th>
+                                <th>Стиль</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ratingTable">
+                            <!-- Рейтинг загружается динамически -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно результатов -->
+    <div class="modal fade" id="resultsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Результаты дня</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="resultsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+        const REAL_CHARACTERS = {
+            politics: [
+                {
+                    name: "Председатель комитета",
+                    role: "Опытный политик",
+                    img: "👨‍⚖️",
+                    traits: ["Принципиальный", "Дипломатичный", "Целеустремленный"],
+                    bias: 0.8,
+                    secret: "Работает над законодательными инициативами",
+                    quote: "Важно находить баланс"
+                },
+                {
+                    name: "Пресс-секретарь",
+                    role: "Коммуникационный специалист",
+                    img: "🎙️",
+                    traits: ["Дипломатичный", "Осторожный", "Лояльный"],
+                    bias: 0.3,
+                    secret: "Специализируется на публичных заявлениях",
+                    quote: "Слова имеют значение"
+                },
+                {
+                    name: "Лидер партии",
+                    role: "Политический лидер",
+                    img: "🎩",
+                    traits: ["Энергичный", "Убедительный", "Стратегический"],
+                    bias: 0.4,
+                    secret: "Формирует политическую программу",
+                    quote: "Важно слушать людей"
+                }
+            ],
+            media: [
+                {
+                    name: "Главный редактор",
+                    role: "Руководитель издания",
+                    img: "🎤",
+                    traits: ["Принципиальный", "Опытный", "Редакционный"],
+                    bias: 0.7,
+                    secret: "Отвечает за редакционную политику",
+                    quote: "Факты превыше всего"
+                },
+                {
+                    name: "Ведущий аналитик",
+                    role: "Медиа-аналитик",
+                    img: "📺",
+                    traits: ["Аналитичный", "Внимательный", "Объективный"],
+                    bias: 0.2,
+                    secret: "Специализируется на разборе новостей",
+                    quote: "Контекст важен"
+                },
+                {
+                    name: "Колумнист",
+                    role: "Обозреватель",
+                    img: "💁‍♀️",
+                    traits: ["Наблюдательный", "Критический", "Стилистический"],
+                    bias: 0.6,
+                    secret: "Пишет авторские колонки",
+                    quote: "Важен взгляд со стороны"
+                }
+            ],
+            journalism: [
+                {
+                    name: "Расследователь",
+                    role: "Журналист-исследователь",
+                    img: "📚",
+                    traits: ["Скрупулёзный", "Настойчивый", "Детальный"],
+                    bias: 0.9,
+                    secret: "Проводит журналистские расследования",
+                    quote: "Истина в деталях"
+                },
+                {
+                    name: "Корреспондент",
+                    role: "Новостной журналист",
+                    img: "📰",
+                    traits: ["Оперативный", "Точный", "Мобильный"],
+                    bias: 0.4,
+                    secret: "Работает в горячих точках",
+                    quote: "Новости не ждут"
+                },
+                {
+                    name: "Критик",
+                    role: "Аналитик и обозреватель",
+                    img: "🎬",
+                    traits: ["Проницательный", "Аналитичный", "Остроумный"],
+                    bias: 0.8,
+                    secret: "Специализируется на критике",
+                    quote: "Важен критический взгляд"
+                }
+            ],
+            activism: [
+                {
+                    name: "Координатор",
+                    role: "Организатор проектов",
+                    img: "⚖️",
+                    traits: ["Организованный", "Преданный", "Тактичный"],
+                    bias: 0.85,
+                    secret: "Координирует общественные инициативы",
+                    quote: "Важен системный подход"
+                },
+                {
+                    name: "Технический директор",
+                    role: "IT-специалист",
+                    img: "💻",
+                    traits: ["Технический", "Инновационный", "Прагматичный"],
+                    bias: 0.5,
+                    secret: "Разрабатывает цифровые решения",
+                    quote: "Технологии меняют мир"
+                },
+                {
+                    name: "Организатор",
+                    role: "Комьюнити-менеджер",
+                    img: "🗳️",
+                    traits: ["Коммуникабельный", "Энергичный", "Организатор"],
+                    bias: 0.9,
+                    secret: "Работает с сообществами",
+                    quote: "Вместе мы сила"
+                }
+            ],
+            culture: [
+                {
+                    name: "Культуролог",
+                    role: "Эксперт по культуре",
+                    img: "🎥",
+                    traits: ["Эрудированный", "Аналитичный", "Широкий взгляд"],
+                    bias: 0.75,
+                    secret: "Изучает культурные явления",
+                    quote: "Культура - зеркало общества"
+                },
+                {
+                    name: "Продюсер",
+                    role: "Креативный продюсер",
+                    img: "💃",
+                    traits: ["Креативный", "Организаторский", "Видящий"],
+                    bias: 0.6,
+                    secret: "Создает культурные проекты",
+                    quote: "Важен творческий процесс"
+                },
+                {
+                    name: "Арт-директор",
+                    role: "Творческий руководитель",
+                    img: "🎤",
+                    traits: ["Креативный", "Видящий", "Художественный"],
+                    bias: 0.5,
+                    secret: "Руководит творческими проектами",
+                    quote: "Искусство говорит само за себя"
+                }
+            ],
+            academia: [
+                {
+                    name: "Профессор",
+                    role: "Ученый и преподаватель",
+                    img: "🎓",
+                    traits: ["Ученый", "Методичный", "Глубокий"],
+                    bias: 0.8,
+                    secret: "Проводит научные исследования",
+                    quote: "Знания требуют доказательств"
+                },
+                {
+                    name: "Декан",
+                    role: "Руководитель факультета",
+                    img: "👩‍💼",
+                    traits: ["Административный", "Стратегический", "Ответственный"],
+                    bias: 0.45,
+                    secret: "Управляет учебным процессом",
+                    quote: "Образование - основа"
+                },
+                {
+                    name: "Исследователь",
+                    role: "Научный сотрудник",
+                    img: "🧠",
+                    traits: ["Любознательный", "Аналитичный", "Сосредоточенный"],
+                    bias: 0.3,
+                    secret: "Проводит полевые исследования",
+                    quote: "Наука - это поиск истины"
+                }
+            ]
+        };
+
+        const SCENARIOS = {
+            politics: {
+                name: "⚖️ ПОЛИТИКА",
+                color: "#dc3545",
+                dilemmas: [
+                    {
+                        title: "Этический выбор в политике",
+                        text: "На вас оказывают давление с целью поддержать спорный законопроект. Нужно принять решение перед голосованием.",
+                        stakes: ["Принципы", "Политический капитал", "Общественное мнение"]
+                    },
+                    {
+                        title: "Конфликт интересов",
+                        text: "Обнаружен потенциальный конфликт интересов у коллеги. Как поступить - поднять вопрос или сохранить молчание?",
+                        stakes: ["Коллегиальность", "Прозрачность", "Репутация"]
+                    },
+                    {
+                        title: "Сложные переговоры",
+                        text: "На переговорах партнер предлагает сделку, которая принесет выгоду, но требует компромисса с принципами.",
+                        stakes: ["Этика", "Выгода", "Долгосрочные отношения"]
+                    }
+                ]
+            },
+            media: {
+                name: "📰 МЕДИА",
+                color: "#0d6efd",
+                dilemmas: [
+                    {
+                        title: "Сложный редакционный выбор",
+                        text: "Получена сенсационная информация от ненадежного источника. Публиковать с оговорками или отказаться?",
+                        stakes: ["Достоверность", "Эксклюзивность", "Репутация СМИ"]
+                    },
+                    {
+                        title: "Баланс объективности",
+                        text: "Требуется осветить спорную тему. Как сохранить баланс между различными точками зрения?",
+                        stakes: ["Объективность", "Вовлеченность", "Профессионализм"]
+                    },
+                    {
+                        title: "Работа с ошибкой",
+                        text: "В опубликованном материале обнаружена неточность. Как исправить ситуацию с минимальными потерями?",
+                        stakes: ["Честность", "Доверие читателей", "Профессиональная репутация"]
+                    }
+                ]
+            },
+            activism: {
+                name: "✊ АКТИВИЗМ",
+                color: "#20c997",
+                dilemmas: [
+                    {
+                        title: "Тактика достижения целей",
+                        text: "Для продвижения важной инициативы требуются радикальные меры. Как сохранить эффективность, не переходя границ?",
+                        stakes: ["Эффективность", "Законность", "Поддержка общества"]
+                    },
+                    {
+                        title: "Внутренний конфликт",
+                        text: "В движении возникли разногласия по стратегии. Как сохранить единство при разных взглядах?",
+                        stakes: ["Единство", "Эффективность", "Принципы"]
+                    },
+                    {
+                        title: "Внешнее давление",
+                        text: "На движение оказывается давление с целью изменения позиции. Как реагировать?",
+                        stakes: ["Независимость", "Выживание движения", "Цели"]
+                    }
+                ]
+            },
+            culture: {
+                name: "🎭 КУЛЬТУРА",
+                color: "#6f42c1",
+                dilemmas: [
+                    {
+                        title: "Творчество и коммерция",
+                        text: "Для реализации проекта требуется спонсорство компании со спорной репутацией. Как поступить?",
+                        stakes: ["Творческая свобода", "Финансирование", "Репутация"]
+                    },
+                    {
+                        title: "Культурный диалог",
+                        text: "Проект затрагивает чувствительные темы. Как вести диалог, не вызывая конфликтов?",
+                        stakes: ["Выразительность", "Тактичность", "Диалог"]
+                    },
+                    {
+                        title: "Наследие и инновации",
+                        text: "Как совместить уважение к традициям с современными подходами в культурном проекте?",
+                        stakes: ["Традиции", "Инновации", "Актуальность"]
+                    }
+                ]
+            }
+        };
+
+        const TRUTH_LEVELS = [
+            { name: "Полная прозрачность", icon: "✅", desc: "Раскрытие всей информации", integrity: 3, risk: 2 },
+            { name: "Избирательная открытость", icon: "🤝", desc: "Частичное раскрытие с учетом контекста", integrity: 2, risk: 1 },
+            { name: "Тактичное умолчание", icon: "🎯", desc: "Фокусировка на ключевых аспектах", integrity: 0, risk: 3 },
+            { name: "Стратегическое сокрытие", icon: "🎭", desc: "Сокрытие части информации для цели", integrity: -2, risk: 4 },
+            { name: "Направленное информирование", icon: "🔥", desc: "Представление информации в нужном свете", integrity: -3, risk: 5 },
+            { name: "Альтернативное прочтение", icon: "🕵️", desc: "Представление иной интерпретации фактов", integrity: -4, risk: 6 }
+        ];
+
+        // ==================== КЛАСС ИГРОКА ====================
+        class Player {
+            constructor() {
+                this.name = "Игрок";
+                this.totalGames = 0;
+                this.totalTruth = 0;
+                this.totalLies = 0;
+                this.history = [];
+                this.stats = {
+                    politics: { truth: 0, lies: 0, score: 0 },
+                    media: { truth: 0, lies: 0, score: 0 },
+                    activism: { truth: 0, lies: 0, score: 0 },
+                    culture: { truth: 0, lies: 0, score: 0 }
+                };
+                this.coefficients = {
+                    stability: 0.5,
+                    social: 0.5,
+                    ethics: 0.5,
+                    strategy: 0.5,
+                    trust: 0.5
+                };
+                this.currentGame = null;
+            }
+            
+            startNewGame(scenario) {
+                this.currentGame = {
+                    scenario: scenario,
+                    day: 1,
+                    trust: 100,
+                    integrity: 0,
+                    reputation: 50,
+                    decisions: [],
+                    characters: [],
+                    currentCharacter: null
+                };
+                
+                // Выбор случайного персонажа для сценария
+                const chars = REAL_CHARACTERS[scenario] || REAL_CHARACTERS.politics;
+                this.currentGame.currentCharacter = this.getRandomCharacter(chars);
+                
+                return this.currentGame;
+            }
+            
+            getRandomCharacter(characters) {
+                return characters[Math.floor(Math.random() * characters.length)];
+            }
+            
+            makeDecision(choice, consequences) {
+                if (!this.currentGame) return;
+                
+                this.currentGame.decisions.push({
+                    day: this.currentGame.day,
+                    choice: choice,
+                    consequences: consequences,
+                    character: this.currentGame.currentCharacter
+                });
+                
+                // Обновление статистики
+                this.totalGames++;
+                if (choice.integrity > 0) {
+                    this.totalTruth++;
+                    this.stats[this.currentGame.scenario].truth++;
+                } else if (choice.integrity < 0) {
+                    this.totalLies++;
+                    this.stats[this.currentGame.scenario].lies++;
+                }
+                
+                // Обновление коэффициентов
+                this.updateCoefficients(choice, consequences);
+                
+                this.currentGame.day++;
+                
+                // Смена персонажа каждые 2 дня
+                if (this.currentGame.day % 2 === 0) {
+                    const chars = REAL_CHARACTERS[this.currentGame.scenario] || REAL_CHARACTERS.politics;
+                    this.currentGame.currentCharacter = this.getRandomCharacter(chars);
+                }
+                
+                return this.currentGame;
+            }
+            
+            updateCoefficients(choice, consequences) {
+                // Коэффициент стабильности (последовательность решений)
+                const lastDecisions = this.history.slice(-3);
+                if (lastDecisions.length >= 2) {
+                    const consistency = lastDecisions.filter(d => 
+                        Math.abs(d.choice.integrity - choice.integrity) < 1.5
+                    ).length / lastDecisions.length;
+                    this.coefficients.stability = (this.coefficients.stability * 0.7 + consistency * 0.3);
+                }
+                
+                // Социальная чувствительность (реакция на доверие)
+                this.coefficients.social = (this.coefficients.social * 0.8 + 
+                    Math.min(1, (consequences.trustChange + 20) / 40) * 0.2);
+                
+                // Этическая консистентность
+                this.coefficients.ethics = (this.coefficients.ethics * 0.9 + 
+                    (choice.integrity > 0 ? 0.1 : choice.integrity < -2 ? -0.05 : 0) * 0.1);
+                
+                // Стратегическая гибкость (баланс риск/выгода)
+                const riskReward = consequences.reputationChange / (choice.risk || 1);
+                this.coefficients.strategy = (this.coefficients.strategy * 0.85 + 
+                    Math.min(1, Math.max(0, (riskReward + 2) / 4)) * 0.15);
+                
+                // Доверительный капитал
+                this.coefficients.trust = Math.max(0, Math.min(1, 
+                    this.coefficients.trust * 0.9 + (consequences.trustChange > 0 ? 0.1 : -0.05)));
+                    
+                // Сохраняем в историю
+                this.history.push({
+                    choice: choice,
+                    consequences: consequences
+                });
+            }
+            
+            getTruthPercentage() {
+                return this.totalGames > 0 ? Math.round((this.totalTruth / this.totalGames) * 100) : 50;
+            }
+            
+            getInfluenceCoefficient() {
+                const avgCoef = Object.values(this.coefficients).reduce((a, b) => a + b, 0) / 
+                               Object.values(this.coefficients).length;
+                return (avgCoef * 1.5 + 0.5).toFixed(2);
+            }
+            
+            getPlayStyle() {
+                const truthPercent = this.getTruthPercentage();
+                const flex = this.coefficients.strategy;
+                
+                if (truthPercent > 80) return "Принципиальный идеалист";
+                if (truthPercent > 60 && flex > 0.6) return "Дипломатичный стратег";
+                if (truthPercent > 40 && flex > 0.7) return "Прагматичный реалист";
+                if (truthPercent < 40 && flex > 0.6) return "Гибкий тактик";
+                if (truthPercent < 20) return "Радикальный прагматик";
+                return "Адаптивный игрок";
+            }
+        }
+
+        // ==================== ГЛОБАЛЬНЫЙ РЕЙТИНГ ====================
+        class GlobalRating {
+            constructor() {
+                this.players = this.generateSamplePlayers(1000);
+                this.globalIndex = 0.65;
+                this.updateInterval = null;
+            }
+            
+            generateSamplePlayers(count) {
+                const names = ["Алексей", "Мария", "Дмитрий", "Анна", "Сергей", "Екатерина", "Андрей", "Ольга"];
+                const surnames = ["Иванов", "Петров", "Сидоров", "Смирнов", "Кузнецов", "Попов", "Васильев", "Морозов"];
+                
+                return Array.from({length: count}, (_, i) => ({
+                    id: i + 1,
+                    name: `${names[i % names.length]} ${surnames[i % surnames.length]}.`,
+                    rating: 5 + Math.random() * 5,
+                    truth: Math.random() * 100,
+                    games: Math.floor(Math.random() * 50) + 5,
+                    style: ["Идеалист", "Прагматик", "Тактик", "Стратег", "Балансир"][Math.floor(Math.random() * 5)]
+                })).sort((a, b) => b.rating - a.rating);
+            }
+            
+            updateGlobalIndex() {
+                // Имитация изменений в социальном индексе
+                const change = (Math.random() - 0.5) * 0.02;
+                this.globalIndex = Math.max(0.3, Math.min(0.9, this.globalIndex + change));
+                
+                // Обновление UI
+                const indexElem = document.getElementById('globalIndex');
+                if (indexElem) {
+                    indexElem.textContent = `${(this.globalIndex * 100).toFixed(1)}%`;
+                    
+                    // Пульсация при значительных изменениях
+                    if (Math.abs(change) > 0.01) {
+                        indexElem.classList.add('pulse');
+                        setTimeout(() => indexElem.classList.remove('pulse'), 2000);
+                    }
+                }
+            }
+            
+            startUpdating() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                this.updateInterval = setInterval(() => this.updateGlobalIndex(), 30000);
+            }
+            
+            stopUpdating() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+            }
+            
+            getPlayerRank(player) {
+                if (!player) return 1;
+                
+                // Симуляция позиции игрока в рейтинге
+                const playerRating = player.getTruthPercentage() / 10 + 
+                                   parseFloat(player.getInfluenceCoefficient());
+                const betterPlayers = this.players.filter(p => p.rating > playerRating).length;
+                return Math.max(1, betterPlayers + 1);
+            }
+            
+            getTopPlayers(limit = 100) {
+                return this.players.slice(0, limit);
+            }
+            
+            getTopPlayer() {
+                return this.players[0];
+            }
+        }
+
+        // ==================== ИГРОВОЙ ДВИЖОК ====================
+        class VeritasGame {
+            constructor() {
+                this.player = new Player();
+                this.rating = new GlobalRating();
+                this.currentScenario = null;
+                this.currentDilemma = null;
+                this.day = 1;
+                this.maxDays = 7;
+                this.selectedOption = null;
+                
+                this.initialize();
+            }
+            
+            initialize() {
+                this.updatePlayerStats();
+                this.updateRatingTable();
+                this.showMainMenu();
+                this.rating.startUpdating();
+            }
+            
+            showMainMenu() {
+                const gameContent = document.getElementById('gameContent');
+                
+                if (!gameContent) return;
+                
+                gameContent.innerHTML = `
+                    <div class="text-center">
+                        <h1 class="display-4 mb-4">🎮 VERITAS 2.0</h1>
+                        <p class="lead mb-5">Эксперимент по социальному доверию в условиях постправды</p>
+                        
+                        <div class="row justify-content-center mb-5">
+                            <div class="col-md-8">
+                                <div class="glass-card p-4">
+                                    <h4 class="mb-3">Выберите сценарий:</h4>
+                                    <div class="row g-4">
+                                        ${Object.entries(SCENARIOS).map(([key, scenario]) => `
+                                            <div class="col-md-6">
+                                                <div class="option-card text-center" onclick="game.startScenario('${key}')">
+                                                    <div class="display-6 mb-3">${scenario.name.split(' ')[0]}</div>
+                                                    <h5>${scenario.name}</h5>
+                                                    <p class="small text-muted">${scenario.dilemmas.length} сложных дилемм</p>
+                                                    <div class="mt-3">
+                                                        <span class="badge" style="background: ${scenario.color}">
+                                                            ${this.player.stats[key] ? this.player.stats[key].truth : 0}П / ${this.player.stats[key] ? this.player.stats[key].lies : 0}Л
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <button class="btn btn-lg btn-outline-primary" onclick="showTab('profile')">
+                                            <i class="fas fa-user-circle me-2"></i>Ваш профиль
+                                        </button>
+                                        <button class="btn btn-lg btn-outline-success ms-2" onclick="showTab('rating')">
+                                            <i class="fas fa-trophy me-2"></i>Глобальный рейтинг
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="glass-card p-3">
+                                    <h5><i class="fas fa-users me-2"></i>Сообщество</h5>
+                                    <div class="h2">1,584</div>
+                                    <small class="text-muted">активных игроков</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="glass-card p-3">
+                                    <h5><i class="fas fa-balance-scale me-2"></i>Баланс правды</h5>
+                                    <div class="h2 text-success">64%</div>
+                                    <small class="text-muted">в среднем по играм</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="glass-card p-3">
+                                    <h5><i class="fas fa-gamepad me-2"></i>Сыграно игр</h5>
+                                    <div class="h2 text-primary">15,842</div>
+                                    <small class="text-muted">всего решений</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            startScenario(scenarioKey) {
+                this.currentScenario = scenarioKey;
+                this.day = 1;
+                this.selectedOption = null;
+                this.player.startNewGame(scenarioKey);
+                this.showNextDilemma();
+            }
+            
+            showNextDilemma() {
+                if (this.day > this.maxDays) {
+                    this.endGame();
+                    return;
+                }
+                
+                const scenario = SCENARIOS[this.currentScenario];
+                const character = this.player.currentGame.currentCharacter;
+                const dilemma = scenario.dilemmas[Math.floor(Math.random() * scenario.dilemmas.length)];
+                
+                this.currentDilemma = dilemma;
+                
+                const gameContent = document.getElementById('gameContent');
+                
+                if (!gameContent) return;
+                
+                gameContent.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h3>${scenario.name} • День ${this.day}/${this.maxDays}</h3>
+                            <div class="d-flex gap-2 mt-2">
+                                <span class="badge bg-primary">Доверие: ${this.player.currentGame.trust}</span>
+                                <span class="badge bg-success">Честность: ${this.player.currentGame.integrity}</span>
+                                <span class="badge bg-warning">Репутация: ${this.player.currentGame.reputation}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="scenario-badge">${scenario.name}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Персонаж -->
+                    <div class="glass-card p-4 mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="character-portrait bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-4" style="font-size: 2rem;">
+                                ${character.img}
+                            </div>
+                            <div>
+                                <h4 class="mb-1">${character.name}</h4>
+                                <p class="text-muted mb-2">${character.role}</p>
+                                <div class="d-flex flex-wrap gap-1">
+                                    ${character.traits.map(t => `<span class="badge bg-secondary">${t}</span>`).join('')}
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted"><i>"${character.quote}"</i></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <small><strong>Контекст:</strong> ${character.secret}</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Дилемма -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">${dilemma.title}</h4>
+                        <div class="glass-card p-4">
+                            <p class="lead">${dilemma.text}</p>
+                            <div class="mt-3">
+                                <h6>Ставки:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    ${dilemma.stakes.map(s => `<span class="consequence-tag neutral-tag">${s}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Варианты ответа -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Ваши возможные действия:</h5>
+                        <div id="optionsContainer">
+                            ${TRUTH_LEVELS.map((level, index) => `
+                                <div class="option-card truth-${index}" onclick="game.selectOption(${index})" data-option="${index}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-2">${level.icon} ${level.name}</h5>
+                                            <p class="mb-2">${level.desc}</p>
+                                            <div class="d-flex gap-2">
+                                                <span class="badge ${level.integrity > 0 ? 'bg-success' : level.integrity < 0 ? 'bg-danger' : 'bg-warning'}">
+                                                    Честность: ${level.integrity > 0 ? '+' : ''}${level.integrity}
+                                                </span>
+                                                <span class="badge bg-secondary">
+                                                    Риск: ${level.risk}/6
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="small text-muted">Склонность персонажа:</div>
+                                            <div class="h5 ${this.getAlignmentColor(character.bias, index)}">
+                                                ${this.getAlignmentText(character.bias, index)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button class="btn btn-lg btn-primary px-5" id="submitButton" onclick="game.makeDecision()" disabled>
+                                <i class="fas fa-paper-plane me-2"></i>Принять решение
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            getAlignmentColor(characterBias, optionIndex) {
+                const optionBias = optionIndex / (TRUTH_LEVELS.length - 1);
+                const difference = Math.abs(characterBias - optionBias);
+                
+                if (difference < 0.2) return "text-success";
+                if (difference < 0.4) return "text-warning";
+                return "text-danger";
+            }
+            
+            getAlignmentText(characterBias, optionIndex) {
+                const optionBias = optionIndex / (TRUTH_LEVELS.length - 1);
+                const difference = Math.abs(characterBias - optionBias);
+                
+                if (difference < 0.2) return "Высокое";
+                if (difference < 0.4) return "Среднее";
+                return "Низкое";
+            }
+            
+            selectOption(index) {
+                document.querySelectorAll('.option-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                const selectedCard = document.querySelector(`[data-option="${index}"]`);
+                if (selectedCard) {
+                    selectedCard.classList.add('selected');
+                    this.selectedOption = index;
+                    const submitBtn = document.getElementById('submitButton');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                }
+            }
+            
+            makeDecision() {
+                if (this.selectedOption === null || this.selectedOption === undefined) return;
+                
+                const choice = TRUTH_LEVELS[this.selectedOption];
+                const character = this.player.currentGame.currentCharacter;
+                const alignment = this.getAlignmentScore(character.bias, this.selectedOption);
+                
+                // Рассчёт последствий
+                const consequences = this.calculateConsequences(choice, alignment);
+                
+                // Обновление игрока
+                this.player.makeDecision(choice, consequences);
+                
+                // Обновление игры
+                this.player.currentGame.trust += consequences.trustChange;
+                this.player.currentGame.integrity += choice.integrity;
+                this.player.currentGame.reputation += consequences.reputationChange;
+                
+                // Показ результатов
+                this.showResults(choice, consequences, character);
+                
+                this.day++;
+            }
+            
+            getAlignmentScore(characterBias, optionIndex) {
+                const optionBias = optionIndex / (TRUTH_LEVELS.length - 1);
+                return 1 - Math.abs(characterBias - optionBias);
+            }
+            
+            calculateConsequences(choice, alignment) {
+                // Базовые изменения
+                let trustChange = choice.integrity * 5 + alignment * 10;
+                let reputationChange = -choice.risk * 2 + alignment * 5;
+                
+                // Влияние дня
+                const dayPressure = this.day / this.maxDays;
+                trustChange *= (1 + dayPressure);
+                reputationChange *= (1 + dayPressure);
+                
+                // Случайный фактор
+                trustChange += (Math.random() - 0.5) * 10;
+                reputationChange += (Math.random() - 0.5) * 8;
+                
+                // Ограничения
+                trustChange = Math.max(-30, Math.min(30, Math.round(trustChange)));
+                reputationChange = Math.max(-20, Math.min(20, Math.round(reputationChange)));
+                
+                // Генерация описания
+                const descriptions = [];
+                if (choice.integrity > 2) {
+                    descriptions.push("Честность оценена персонажем");
+                }
+                if (choice.risk > 4) {
+                    descriptions.push("Рискованный ход");
+                }
+                if (alignment > 0.8) {
+                    descriptions.push("Совпадение с мировоззрением персонажа");
+                }
+                
+                return {
+                    trustChange: trustChange,
+                    reputationChange: reputationChange,
+                    alignment: alignment,
+                    descriptions: descriptions
+                };
+            }
+            
+            showResults(choice, consequences, character) {
+                const resultsContent = document.getElementById('resultsContent');
+                
+                if (!resultsContent) return;
+                
+                resultsContent.innerHTML = `
+                    <div class="text-center mb-4">
+                        <h4>День ${this.day - 1} завершён</h4>
+                        <p class="lead">${character.name} оценил ваше решение</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="consequence-alert alert ${consequences.trustChange >= 0 ? 'alert-success' : 'alert-danger'}">
+                                <h5><i class="fas fa-handshake"></i> Изменение доверия</h5>
+                                <div class="display-4 ${consequences.trustChange >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${consequences.trustChange >= 0 ? '+' : ''}${consequences.trustChange}
+                                </div>
+                                <small>Новое значение: ${this.player.currentGame.trust}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="consequence-alert alert ${consequences.reputationChange >= 0 ? 'alert-info' : 'alert-warning'}">
+                                <h5><i class="fas fa-chart-line"></i> Изменение репутации</h5>
+                                <div class="display-4 ${consequences.reputationChange >= 0 ? 'text-info' : 'text-warning'}">
+                                    ${consequences.reputationChange >= 0 ? '+' : ''}${consequences.reputationChange}
+                                </div>
+                                <small>Новое значение: ${this.player.currentGame.reputation}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Реакция персонажа:</h5>
+                        <div class="glass-card p-3">
+                            <div class="d-flex align-items-center">
+                                <div style="font-size: 2rem;" class="me-3">${character.img}</div>
+                                <div>
+                                    <strong>${character.name}:</strong>
+                                    <p class="mb-0 mt-1">"${this.getCharacterReaction(choice, consequences.alignment)}"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${consequences.descriptions.length > 0 ? `
+                        <div class="mb-3">
+                            <h6>Особые эффекты:</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                ${consequences.descriptions.map(d => `
+                                    <span class="consequence-tag ${choice.integrity > 0 ? 'positive-tag' : 'negative-tag'}">
+                                        ${d}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="text-center mt-4">
+                        ${this.day <= this.maxDays ? `
+                            <button class="btn btn-lg btn-primary" onclick="game.continueGame()" data-bs-dismiss="modal">
+                                Продолжить игру
+                            </button>
+                        ` : `
+                            <button class="btn btn-lg btn-success" onclick="game.endGame()" data-bs-dismiss="modal">
+                                Завершить игру
+                            </button>
+                        `}
+                    </div>
+                `;
+                
+                const modalElement = document.getElementById('resultsModal');
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            }
+            
+            getCharacterReaction(choice, alignment) {
+                const reactions = {
+                    highTruth: [
+                        "Я ценю вашу прямоту. В наше время это редкость.",
+                        "Честность - это смелость. Вы меня уважаете.",
+                        "Прямо и без прикрас. Так и нужно говорить правду."
+                    ],
+                    mediumTruth: [
+                        "Дипломатично, но суть ясна. Приемлемый подход.",
+                        "Вы нашли баланс между правдой и тактом.",
+                        "Мудрое решение, учитывающее обстоятельства."
+                    ],
+                    lowTruth: [
+                        "Хм, не всё так однозначно, как вы говорите.",
+                        "Вы что-то умалчиваете, это заметно.",
+                        "Слишком гладко для правдивой истории."
+                    ],
+                    deception: [
+                        "Интересная версия... слишком интересная.",
+                        "Вы думаете, я поверю в это?",
+                        "Ложь имеет короткие ноги, помните об этом."
+                    ]
+                };
+                
+                if (choice.integrity > 1 && alignment > 0.7) {
+                    return reactions.highTruth[Math.floor(Math.random() * reactions.highTruth.length)];
+                } else if (choice.integrity >= 0 && alignment > 0.5) {
+                    return reactions.mediumTruth[Math.floor(Math.random() * reactions.mediumTruth.length)];
+                } else if (choice.integrity < 0) {
+                    return reactions.deception[Math.floor(Math.random() * reactions.deception.length)];
+                } else {
+                    return reactions.lowTruth[Math.floor(Math.random() * reactions.lowTruth.length)];
+                }
+            }
+            
+            continueGame() {
+                this.showNextDilemma();
+                this.updatePlayerStats();
+            }
+            
+            endGame() {
+                const gameContent = document.getElementById('gameContent');
+                
+                if (!gameContent) return;
+                
+                // Рассчёт итогового рейтинга
+                const truthPercent = this.player.getTruthPercentage();
+                const influence = this.player.getInfluenceCoefficient();
+                const finalScore = Math.round((truthPercent * 0.7 + parseFloat(influence) * 30) / 10);
+                
+                gameContent.innerHTML = `
+                    <div class="text-center">
+                        <h1 class="display-4 mb-4">🎉 Игра завершена!</h1>
+                        
+                        <div class="glass-card p-5 mb-4">
+                            <h3 class="mb-3">${SCENARIOS[this.currentScenario].name}</h3>
+                            <div class="display-1 mb-3 text-${finalScore >= 8 ? 'success' : finalScore >= 6 ? 'warning' : 'danger'}">
+                                ${finalScore}/10
+                            </div>
+                            <p class="lead">Ваш итоговый рейтинг</p>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="glass-card p-4 h-100">
+                                    <h5><i class="fas fa-chart-pie me-2"></i>Статистика игры</h5>
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Правдивость в игре:</span>
+                                            <span class="fw-bold">${truthPercent}%</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Коэффициент влияния:</span>
+                                            <span class="fw-bold">${influence}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Финальное доверие:</span>
+                                            <span class="fw-bold">${this.player.currentGame.trust}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Позиция в рейтинге:</span>
+                                            <span class="fw-bold text-primary">#${this.rating.getPlayerRank(this.player)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="glass-card p-4 h-100">
+                                    <h5><i class="fas fa-trophy me-2"></i>Достижения</h5>
+                                    <div class="mt-3">
+                                        ${truthPercent >= 80 ? `
+                                            <div class="alert alert-success">
+                                                <i class="fas fa-medal me-2"></i>
+                                                <strong>Мастер правды:</strong> Вы сохранили высокую честность
+                                            </div>
+                                        ` : ''}
+                                        ${this.player.currentGame.trust >= 120 ? `
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-handshake me-2"></i>
+                                                <strong>Доверенное лицо:</strong> Вы завоевали высокое доверие
+                                            </div>
+                                        ` : ''}
+                                        ${this.player.currentGame.reputation >= 70 ? `
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-star me-2"></i>
+                                                <strong>Блестящая репутация:</strong> Ваш имидж укреплён
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4>Ваш стиль игры: <span class="text-primary">${this.player.getPlayStyle()}</span></h4>
+                        </div>
+                        
+                        <div class="d-flex justify-content-center gap-3">
+                            <button class="btn btn-primary btn-lg" onclick="game.startScenario('${this.currentScenario}')">
+                                <i class="fas fa-redo me-2"></i>Играть ещё раз
+                            </button>
+                            <button class="btn btn-success btn-lg" onclick="game.showMainMenu()">
+                                <i class="fas fa-home me-2"></i>В главное меню
+                            </button>
+                            <button class="btn btn-info btn-lg" onclick="showTab('profile')">
+                                <i class="fas fa-user me-2"></i>Ваш профиль
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                this.updatePlayerStats();
+                this.updateRatingTable();
+            }
+            
+            updatePlayerStats() {
+                const playerTruth = document.getElementById('playerTruth');
+                const playerGames = document.getElementById('playerGames');
+                const influenceCoef = document.getElementById('influenceCoef');
+                const playerRank = document.getElementById('playerRank');
+                
+                if (playerTruth) playerTruth.textContent = `${this.player.getTruthPercentage()}%`;
+                if (playerGames) playerGames.textContent = this.player.totalGames;
+                if (influenceCoef) influenceCoef.textContent = this.player.getInfluenceCoefficient();
+                if (playerRank) playerRank.textContent = `#${this.rating.getPlayerRank(this.player)}`;
+                
+                // Обновление коэффициентов в профиле
+                const updateElement = (id, value) => {
+                    const element = document.getElementById(id);
+                    if (element) element.textContent = value.toFixed(2);
+                };
+                
+                updateElement('coefStability', this.player.coefficients.stability);
+                updateElement('coefSocial', this.player.coefficients.social);
+                updateElement('coefEthics', this.player.coefficients.ethics);
+                updateElement('coefStrategy', this.player.coefficients.strategy);
+                updateElement('coefTrust', this.player.coefficients.trust);
+                
+                const playStyleElement = document.getElementById('playStyle');
+                if (playStyleElement) playStyleElement.textContent = this.player.getPlayStyle();
+                
+                // Обновление истории решений
+                this.updateDecisionHistory();
+                
+                // Обновление графика
+                this.updateStyleChart();
+            }
+            
+            updateDecisionHistory() {
+                const historyContainer = document.getElementById('decisionHistory');
+                if (!historyContainer) return;
+                
+                const recentDecisions = this.player.history.slice(-5).reverse();
+                
+                historyContainer.innerHTML = recentDecisions.map(decision => `
+                    <div class="glass-card p-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${decision.character ? decision.character.name : 'Персонаж'}</strong>
+                                <div class="small text-muted">${decision.choice.name}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge ${decision.choice.integrity > 0 ? 'bg-success' : decision.choice.integrity < 0 ? 'bg-danger' : 'bg-warning'}">
+                                    ${decision.choice.integrity > 0 ? '+' : ''}${decision.choice.integrity}
+                                </span>
+                                <div class="small">
+                                    <span class="${decision.consequences.trustChange >= 0 ? 'text-success' : 'text-danger'}">
+                                        ${decision.consequences.trustChange >= 0 ? '+' : ''}${decision.consequences.trustChange}
+                                    </span> доверия
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            updateStyleChart() {
+                const canvas = document.getElementById('styleChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                
+                // Уничтожаем старый график если есть
+                if (window.styleChartInstance) {
+                    window.styleChartInstance.destroy();
+                }
+                
+                const data = {
+                    labels: ['Стабильность', 'Социальность', 'Этика', 'Стратегия', 'Доверие'],
+                    datasets: [{
+                        label: 'Ваши коэффициенты',
+                        data: Object.values(this.player.coefficients),
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.2)',
+                            'rgba(0, 123, 255, 0.2)',
+                            'rgba(111, 66, 193, 0.2)',
+                            'rgba(255, 193, 7, 0.2)',
+                            'rgba(32, 201, 151, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgb(40, 167, 69)',
+                            'rgb(0, 123, 255)',
+                            'rgb(111, 66, 193)',
+                            'rgb(255, 193, 7)',
+                            'rgb(32, 201, 151)'
+                        ],
+                        borderWidth: 2,
+                        pointBackgroundColor: 'white',
+                        pointBorderColor: 'black',
+                        pointRadius: 5
+                    }]
+                };
+                
+                const config = {
+                    type: 'radar',
+                    data: data,
+                    options: {
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 1,
+                                ticks: {
+                                    stepSize: 0.2
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                };
+                
+                window.styleChartInstance = new Chart(ctx, config);
+            }
+            
+            updateRatingTable() {
+                const topPlayers = this.rating.getTopPlayers(10);
+                const tableBody = document.getElementById('ratingTable');
+                const topPlayerElement = document.getElementById('topPlayer');
+                
+                if (topPlayerElement) {
+                    const topPlayer = this.rating.getTopPlayer();
+                    topPlayerElement.textContent = topPlayer.name;
+                }
+                
+                if (!tableBody) return;
+                
+                tableBody.innerHTML = topPlayers.map((player, index) => `
+                    <tr ${index === 0 ? 'class="table-warning"' : ''}>
+                        <td><strong>${index + 1}</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="character-portrait me-2 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div>
+                                    <strong>${player.name}</strong>
+                                    <div class="small text-muted">${player.style}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-primary">${player.rating.toFixed(1)}/10</span></td>
+                        <td>
+                            <div class="progress" style="height: 8px; width: 100px;">
+                                <div class="progress-bar bg-success" style="width: ${player.truth}%"></div>
+                            </div>
+                            <small>${player.truth.toFixed(1)}%</small>
+                        </td>
+                        <td>${player.games}</td>
+                        <td><span class="badge bg-secondary">${player.style}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // ==================== ГЛОБАЛЬНЫЕ ФУНКЦИИ ====================
+        let game;
+
+        function showTab(tabName) {
+            // Скрываем все вкладки
+            const tabs = ['game', 'profile', 'rating'];
+            tabs.forEach(tab => {
+                const element = document.getElementById(`${tab}Tab`);
+                if (element) element.style.display = 'none';
+            });
+            
+            // Показываем выбранную вкладку
+            const selectedTab = document.getElementById(`${tabName}Tab`);
+            if (selectedTab) selectedTab.style.display = 'block';
+            
+            // Обновляем данные если нужно
+            if (tabName === 'profile' && game) {
+                game.updatePlayerStats();
+            }
+            if (tabName === 'rating' && game) {
+                game.updateRatingTable();
+            }
+        }
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            game = new VeritasGame();
+            
+            // Глобальные функции
+            window.game = game;
+            window.showTab = showTab;
+            
+            // Обновление глобального индекса каждые 30 секунд
+            setInterval(() => {
+                const indexElem = document.getElementById('globalIndex');
+                if (indexElem) {
+                    const current = parseFloat(indexElem.textContent);
+                    const change = (Math.random() - 0.5) * 0.5;
+                    const newValue = Math.max(50, Math.min(95, current + change));
+                    indexElem.textContent = `${newValue.toFixed(1)}%`;
+                    
+                    // Обновление позиции игрока
+                    if (game) {
+                        const rank = game.rating.getPlayerRank(game.player);
+                        const playerRankElem = document.getElementById('playerRank');
+                        if (playerRankElem) playerRankElem.textContent = `#${rank}`;
+                    }
+                }
+            }, 30000);
+            
+            // Обработка клавиш
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= '1' && e.key <= '6') {
+                    const index = parseInt(e.key) - 1;
+                    if (game && game.selectedOption !== null) {
+                        game.selectOption(index);
+                    }
+                }
+                
+                if (e.key === 'Enter') {
+                    const submitBtn = document.getElementById('submitButton');
+                    if (submitBtn && !submitBtn.disabled && game) {
+                        game.makeDecision();
+                    }
+                }
+                
+                if (e.key === 'Escape') {
+                    const modalElement = document.getElementById('resultsModal');
+                    if (modalElement) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) modal.hide();
+                    }
+                }
+            });
+        });
+
+        // Очистка при закрытии страницы
+        window.addEventListener('beforeunload', () => {
+            if (game && game.rating) {
+                game.rating.stopUpdating();
+            }
+        });
+    </script>
+</body>
+</html>
